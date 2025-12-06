@@ -141,13 +141,216 @@ En résumé, pour la simulation, il suffit de considérer qu’en dessous d’un
 ### 3.2 Déviation des rayons lumineux
 ### 3.3 Approximation utilisée
 
-## 4. Implémentation en C++
-### 4.1 Architecture du programme
-### 4.2 Fonctions de calcul
-### 4.3 Rendu (console ou graphique)
+## 4. Connaissances C++ nécessaires
+
+Pour simuler un trou noir en C++, il n'est pas nécessaire de maîtriser toute la Relativité Générale. On utilise des éléments fondamentaux du langage : mathématiques, structures de données et affichage graphique. Cette section détaille les compétences préalables requises pour programmer une telle simulation, en s'inspirant des techniques de ray tracing et des implémentations de simulations de trous noirs existantes.
+
+---
+
+### 4.1 Calcul scientifique de base
+
+La lumière autour d'un trou noir ne se déplace pas en ligne droite : elle est courbée par la gravité intense. Pour simuler ce phénomène, nous avons besoin d'outils mathématiques essentiels en C++.
+
+#### Vecteurs et matrices
+
+La manipulation des **positions et directions** dans l'espace tridimensionnel est cruciale. Comme dans les techniques de ray tracing (voir [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html)), les vecteurs 3D sont la base de tous les calculs géométriques.
+
+Un **vecteur 3D** sert à représenter :
+
+- une **position** dans l'espace (x, y, z),
+- une **direction** de déplacement,
+- une **force** ou une accélération.
+
+Voici une structure de base pour un vecteur 3D :
+
+```cpp
+struct Vec3 {
+    double x, y, z;
+    
+    Vec3 operator+(const Vec3& v) const { return {x + v.x, y + v.y, z + v.z}; }
+    Vec3 operator-(const Vec3& v) const { return {x - v.x, y - v.y, z - v.z}; }
+    Vec3 operator*(double k) const { return {x * k, y * k, z * k}; }
+    Vec3 operator/(double k) const { return {x / k, y / k, z / k}; }
+    
+    double length() const { return sqrt(x*x + y*y + z*z); }
+    Vec3 normalize() const { return *this / length(); }
+};
+```
+
+Dans la simulation, chaque rayon lumineux se déplace selon une équation de ce type :
+
+```cpp
+position = position + direction * distance;
+```
+
+Sans vecteurs, on ne pourrait pas faire avancer le rayon dans l'espace courbé autour du trou noir.
+
+#### Géométrie 3D : produits scalaires, normes, coordonnées sphériques
+
+La géométrie 3D est essentielle pour calculer les trajectoires des rayons lumineux. Les concepts suivants sont fondamentaux :
+
+- **Produit scalaire** : permet de déterminer l'angle entre deux vecteurs et de savoir si un rayon se rapproche ou s'éloigne du trou noir.
+
+```cpp
+double dot(const Vec3& a, const Vec3& b) {
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+```
+
+- **Norme d'un vecteur** : mesure la distance du rayon au centre du trou noir, essentielle pour calculer l'intensité de la courbure.
+
+```cpp
+double length(const Vec3& v) {
+    return sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+}
+```
+
+- **Coordonnées sphériques** : particulièrement utiles pour la métrique de Schwarzschild, elles permettent de représenter un point en fonction de sa distance radiale et de ses angles. La conversion entre coordonnées cartésiennes et sphériques est souvent nécessaire :
+
+```cpp
+// Conversion de coordonnées sphériques (r, θ, φ) à cartésiennes
+Vec3 sphericalToCartesian(double r, double theta, double phi) {
+    return {
+        r * sin(theta) * cos(phi),
+        r * sin(theta) * sin(phi),
+        r * cos(theta)
+    };
+}
+```
+
+Ces fonctions sont indispensables pour calculer correctement la déviation des rayons lumineux dans l'espace-temps courbé.
+
+#### Fonctions mathématiques : sqrt(), sin(), cos(), atan2()
+
+Ces fonctions proviennent de la bibliothèque standard C++ `#include <cmath>` et sont la base de presque toutes les simulations physiques.
+
+Rôle dans la simulation :
+
+- `sqrt()` → calculer des distances dans l'espace (norme de vecteurs),
+- `sin()` / `cos()` → générer des directions de rayons selon un angle, convertir entre coordonnées,
+- `atan2()` → obtenir l'angle d'un vecteur (utile pour les conversions de coordonnées et certains effets visuels).
+
+Ces fonctions sont utilisées à chaque étape du calcul des trajectoires des rayons lumineux.
+
+### 4.2 Structures de données
+
+Pour gérer efficacement une grande quantité de rayons lumineux et de pixels, on utilise des structures de données simples mais puissantes du C++.
+
+#### Tableaux dynamiques : std::vector
+
+Pour simuler une image, on lance un rayon par pixel. Par exemple, une image 800×600 contient **480 000 pixels**, ce qui signifie **480 000 rayons** à calculer.
+
+On utilise donc un tableau dynamique :
+
+```cpp
+#include <vector>
+
+std::vector<Ray> rays;
+```
+
+Pourquoi `std::vector` plutôt qu'un tableau statique ?
+
+- on ne connaît pas toujours la taille à l'avance (résolution variable),
+- `std::vector` gère automatiquement la mémoire (allocation/désallocation),
+- il est facile à parcourir avec des boucles (`for (auto& ray : rays)`),
+- il peut contenir un très grand nombre de rayons sans limite fixe.
+
+Cette approche est similaire à celle utilisée dans les implémentations de ray tracing, où chaque pixel de l'image finale correspond à un rayon calculé.
+
+#### Structures simples : Ray { position, direction, couleur }
+
+Un rayon lumineux est représenté par une structure simple qui encapsule toutes ses propriétés :
+
+```cpp
+struct Color {
+    unsigned char r, g, b;
+};
+
+struct Ray {
+    Vec3 position;    // Position actuelle du rayon
+    Vec3 direction;      // Direction de propagation (vecteur normalisé)
+    Color color;         // Couleur finale du pixel
+};
+```
+
+Rôle de cette structure :
+
+- `position` → où se trouve le rayon à un instant donné dans l'espace,
+- `direction` → vers où il se déplace (vecteur unitaire),
+- `color` → couleur finale du pixel qu'il représente dans l'image.
+
+Chaque pixel final de l'image correspond à un rayon simulé. Cette structure permet de suivre l'évolution de chaque rayon à travers l'espace-temps courbé, en mettant à jour sa position et sa direction à chaque étape du calcul.
+
+Sans cette structure, il serait impossible de suivre correctement l'évolution de la lumière dans la simulation, notamment lorsque les rayons sont déviés par la courbure de l'espace-temps autour du trou noir.
+
+### 4.3 Affichage graphique
+
+Une fois que tous les pixels ont été calculés, il faut afficher l'image finale. Il existe deux approches principales : un rendu texte simple (ASCII) pour le débogage, ou un rendu graphique avec OpenGL pour une visualisation réaliste.
+
+#### Rendu console (ASCII) — option simple
+
+Méthode très simple pour valider rapidement la logique de la simulation : afficher des caractères en fonction de la luminosité ou de la distance à l'horizon du trou noir.
+
+```cpp
+char pixelFor(double intensity) {
+    if (intensity < 0.2) return ' ';  // Très sombre
+    if (intensity < 0.4) return '.';  // Sombre
+    if (intensity < 0.6) return '*';   // Moyen
+    if (intensity < 0.8) return 'o';  // Clair
+    return '@';                        // Très clair
+}
+```
+
+Ce type de rendu permet de valider la logique de la simulation sans utiliser d'interface graphique complexe. C'est utile pour les premières étapes de développement et le débogage.
+
+#### Rendu graphique avec OpenGL — rendu accéléré par GPU
+
+Pour un rendu plus réaliste et performant, on utilise **OpenGL** pour envoyer l'image finale au GPU (carte graphique) et l'afficher dans une fenêtre. Cette approche est utilisée dans des implémentations pour visualiser les simulations de trous noirs.
+
+On suppose qu'on a déjà rempli un tableau de pixels avec les résultats de la simulation :
+
+```cpp
+std::vector<Color> image(width * height);
+// ... calcul de chaque pixel ...
+```
+
+Après avoir calculé chaque pixel, on peut envoyer cette image à la carte graphique :
+
+```cpp
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+             width, height, 0,
+             GL_RGB, GL_UNSIGNED_BYTE,
+             image.data());
+```
+
+**Pourquoi OpenGL ?**
+
+- **Performance** : rendu accéléré par GPU, essentiel pour des simulations en temps réel,
+- **Flexibilité** : permet d'afficher des images complètes à l'écran avec des animations fluides,
+- **Standard** : bibliothèque largement utilisée et bien documentée.
+
+**Important** : OpenGL ne fait **pas** la simulation physique. Il sert uniquement à afficher l'image calculée par votre programme C++. Tous les calculs de trajectoires des rayons lumineux, de courbure de l'espace-temps et de déviation gravitationnelle doivent être effectués dans votre code C++ avant l'affichage.
 
 ## 5. Limites du modèle
 
 ## 6. Conclusion
 
 ## 7. Sources
+
+### Concepts physiques
+
+- NASA, *Black Holes*, [imagine.gsfc.nasa.gov](https://imagine.gsfc.nasa.gov/science/objects/black_holes1.html) — Introduction aux trous noirs pour étudiants
+
+- Sherpas Physique, *Courbure de l'espace-temps*, [sherpas.com](https://sherpas.com/p/physique/courbure-espace-temps.html) — Explication de la courbure de l'espace-temps et de son effet sur le mouvement des objets
+
+- Space.com, *What is a black hole event horizon (and what happens there)?*, [space.com](https://www.space.com/black-holes-event-horizon-explained.html) — Explication de l'horizon des événements et de la singularité
+
+- Wikipedia, *Schwarzschild metric* — Métrique de Schwarzschild et coordonnées sphériques
+
+### Implémentation technique
+
+- Peter Shirley, *Ray Tracing in One Weekend*, [raytracing.github.io](https://raytracing.github.io/books/RayTracingInOneWeekend.html) — Techniques de base du ray tracing en C++
+
+- 20k, *Schwarzschild Black Hole Simulation*, [20k.github.io](https://20k.github.io/c%2B%2B/2024/05/31/schwarzschild.html) — Implémentation C++ d'une simulation de trou noir de Schwarzschild
+
+- Code source de référence : [github.com/20k/20k.github.io](https://github.com/20k/20k.github.io/blob/master/code/schwarzschild/main.cpp) — Exemple d'implémentation complète
