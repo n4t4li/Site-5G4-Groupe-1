@@ -1,18 +1,22 @@
 +++
-archetype = "chapter"
-title = "420-5G4-A25"
-weight = 0
+title = "Simulation numérique d’un trou noir en C++"
+weight = 1
+[params]
+  author = "Équipe : Natali P., Nermine G., Goufran A."
 +++
 
-# Technologies émergentes
+> [!info]
+> Projet fait par Natali P., Nermine G. et Goufran A.
 
-- [**Base de connaissances**](./base-de-connaissances) : ensemble de connaissances nécessaires pour le cours, il s'agit de pages de références pouvant aller plus loin que le contenu abordé en cours.
-- [**Cours**](./cours) : Contenu qui sera abordé tout au long de la session.
-- [**Veille technologique**](./veille_technologique/) : Cours pour le projet de fin de session
+## Présentation du projet
 
----
+Ce projet explore la simulation numérique d’un trou noir en utilisant le langage C++.
+Il comprend trois volets :
 
-> [!blue] Attention
-> Ce cours sera donné sur **Linux**. Vous pouvez suivre avec windows, la plupart des outils nécessaires sont disponibles (VScode et Docker), mais j'offrirai seulement du support pour Linux.
-> 
-> Servez-vous de machines virtuelles au besoin. De préférence avec Linux comme machine hôte et windows en invité, l'inverse est possible aussi, c'est votre choix.
+- **Veille technologique**
+- **Notes de cours**
+- **Atelier pratique (TP)**
+
+Ces trois documents ont pour objectif d’introduire, d’expliquer, et de faire manipuler
+les concepts physiques et informatiques nécessaires pour comprendre comment
+simuler un trou noir de manière simplifiée.
