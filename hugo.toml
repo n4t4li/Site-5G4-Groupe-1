@@ -1,5 +1,4 @@
-'baseURL = 'https://n4t4li.github.io/Site-5G4-Groupe-1/'
-
+baseURL = 'https://n4t4li.github.io/Site-5G4-Groupe-1/'
 languageCode = 'fr'
 title = '420-5G4-A25'
 theme = "hugo-theme-relearn"
