@@ -1,13 +1,10 @@
-[module]
-  [[module.imports]]
-    path = "github.com/McShelby/hugo-theme-relearn"
-
 baseURL = 'https://n4t4li.github.io/Site-5G4-Groupe-1/'
 languageCode = 'fr'
 title = '420-5G4-A25'
 
-# REMOVE the theme = "" line because modules replace it
-# theme = "hugo-theme-relearn"
+[module]
+  [[module.imports]]
+    path = "github.com/McShelby/hugo-theme-relearn"
 
 [outputs]
 home = [ "HTML", "RSS" ]
@@ -17,6 +14,7 @@ home = [ "HTML", "RSS" ]
   collapsibleMenu = true
   disableLandingPageButton = true
   disableInlineCopyToClipBoard = true
+
 
 [markup]
   [markup.goldmark]
